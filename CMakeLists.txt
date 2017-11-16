@@ -8,10 +8,26 @@ pkg_check_modules(GLIB REQUIRED glib-2.0)
 pkg_check_modules(LZMA REQUIRED liblzma)
 pkg_check_modules(ZLIB REQUIRED zlib)
 
+# determine Git commit ID
 execute_process(
-    COMMAND git describe --tags --always --abbrev=7
-    WORKING_DIRECTORY ${CMAKE_CURRENT_SOURCE_DIR}
-    OUTPUT_VARIABLE GIT_VERSION
+    COMMAND git rev-parse --short HEAD
+    WORKING_DIRECTORY ${PROJECT_SOURCE_DIR}
+    OUTPUT_VARIABLE GIT_COMMIT
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+)
+
+# set version and build number
+set(VERSION 1-alpha)
+if("$ENV{TRAVIS_BUILD_NUMBER}" STREQUAL "")
+    set(BUILD_NUMBER "<local dev build>")
+else()
+    set(BUILD_NUMBER "$ENV{TRAVIS_BUILD_NUMBER}")
+endif()
+
+# get current date
+execute_process(
+    COMMAND env LC_ALL=C date -u "+%Y-%m-%d %H:%M:%S %Z"
+    OUTPUT_VARIABLE DATE
     OUTPUT_STRIP_TRAILING_WHITESPACE
 )
 
@@ -101,7 +117,9 @@ target_link_libraries(appimagetool dl pthread lzma z)
 
 target_compile_definitions(appimagetool
     PRIVATE -D_FILE_OFFSET_BITS=64
-    PRIVATE -DVERSION_NUMBER="${GIT_VERSION}"
+    PRIVATE -DGIT_COMMIT="${GIT_COMMIT}"
+    PRIVATE -DBUILD_NUMBER="${BUILD_NUMBER}"
+    PRIVATE -DBUILD_DATE="${DATE}"
     PRIVATE -DENABLE_BINRELOC
 )
 
